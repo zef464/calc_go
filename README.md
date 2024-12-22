@@ -35,7 +35,7 @@ go run cmd\main.go
 
 2. Открываете cmd и пишете запрос на curl
 
-"curl -X POST -H "Content-Type: application/json" -d "{\"expression\": \"5+5\"}" http://127.0.0.1:8080/api/v1/calculate"
+curl -X POST -H "Content-Type: application/json" -d "{\"expression\": \"5+5\"}" http://127.0.0.1:8080/api/v1/calculate
 
 И получаете ответ!
 
