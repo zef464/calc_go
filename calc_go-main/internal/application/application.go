@@ -24,11 +24,12 @@ type Expression struct {
 }
 
 type Task struct {
-	ID            int    `json:"id"`
+	NumTask       int    `json:"task"`
 	Arg1          string `json:"arg1"`
 	Arg2          string `json:"arg2"`
 	Op            string `json:"operation"`
 	OperationTime int    `json:"operation_time"`
+	Status        string `json:"status"` // Новое поле!
 }
 
 type Config struct {
@@ -127,7 +128,7 @@ func CalcHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Фоновый расчёт с задержкой
 	go func() {
-		time.Sleep(5 * time.Second) // Имитация обработки (5 секунд)
+		time.Sleep(10 * time.Second) // Имитация обработки (10 секунд)
 
 		result, err := eval(req.Expression)
 
@@ -155,10 +156,8 @@ func writeJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) 
 
 // parseExpression разбивает выражение на составляющие, возвращая задачи для дальнейшего выполнения
 func parseExpression(expression string) ([]Task, error) {
-	// Убираем пробелы в начале и в конце строки
 	expression = strings.TrimSpace(expression)
 
-	// Пытаемся найти оператор (допускаем операторы +, -, *, /)
 	var operator string
 	var operatorIndex int
 	for i, ch := range expression {
@@ -169,27 +168,28 @@ func parseExpression(expression string) ([]Task, error) {
 		}
 	}
 
-	// Если оператор не найден, возвращаем ошибку
 	if operator == "" {
 		return nil, errors.New("invalid expression format: operator not found")
 	}
 
-	// Разбиваем строку на операнды
 	arg1 := expression[:operatorIndex]
 	arg2 := expression[operatorIndex+1:]
 
-	// Проверяем, что у нас есть два операнда
 	if arg1 == "" || arg2 == "" {
 		return nil, errors.New("invalid expression format: missing operand(s)")
 	}
 
-	// Создаём задачу
+	mu.Lock()
+	taskCounter++ // Увеличиваем глобальный счётчик
+	taskNum := taskCounter
+	mu.Unlock()
+
 	task := Task{
-		ID:            1,
+		NumTask:       taskNum, // Теперь нумерация задач корректная
 		Arg1:          arg1,
 		Op:            operator,
 		Arg2:          arg2,
-		OperationTime: 5, // Примерное время выполнения операции
+		OperationTime: 10,
 	}
 
 	return []Task{task}, nil
@@ -242,51 +242,48 @@ func GetExpressionByIDHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // print tasks
+var taskCounter int // Глобальный счётчик задач
+
+func AddNewTask(expression *Expression, task Task) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	taskCounter++              // Глобальный счётчик задач
+	task.NumTask = taskCounter // Каждой новой задаче даём уникальный номер
+	expression.Tasks = append(expression.Tasks, task)
+}
+
 func TaskHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		mu.Lock()
 		defer mu.Unlock()
 
-		var selectedTask *Task
-		var selectedExpr *Expression
+		var availableTasks []Task
 
-		// Ищем первое выражение с невыполненной задачей
+		// Собираем все задачи со статусом "pending"
 		for _, expr := range expressions {
-			if expr.ProcessingTask != nil {
-				// Если уже есть выполняющаяся задача — возвращаем её
-				selectedTask = expr.ProcessingTask
-				selectedExpr = expr
-				break
-			}
-
 			for i := range expr.Tasks {
-				if expr.Status != "completed" { // Проверяем статус
-					selectedTask = &expr.Tasks[i]
-					selectedExpr = expr
-					expr.ProcessingTask = selectedTask // Фиксируем выполняемую задачу
-					break
+				if expr.Tasks[i].Status == "" { // Если статус не установлен, считаем "pending"
+					expr.Tasks[i].Status = "processing" // Фиксируем выполнение
+					availableTasks = append(availableTasks, expr.Tasks[i])
 				}
-			}
-			if selectedTask != nil {
-				break
 			}
 		}
 
-		if selectedTask == nil {
+		if len(availableTasks) == 0 {
 			http.Error(w, "No tasks", http.StatusNotFound)
 			return
 		}
 
-		// Логируем задачу
-		log.Printf("Processing task: %d", selectedTask.ID)
-
-		// Обновляем статус выражения
-		selectedExpr.Status = "processing"
+		// Логируем задачи
+		for _, task := range availableTasks {
+			log.Printf("Processing task: %d", task.NumTask)
+		}
 
 		// Формируем JSON-ответ
 		writeJSONResponse(w, map[string]interface{}{
-			"task": selectedTask,
+			"tasks": availableTasks,
 		}, http.StatusOK)
 
 	case http.MethodPost:
@@ -303,28 +300,45 @@ func TaskHandler(w http.ResponseWriter, r *http.Request) {
 		defer mu.Unlock()
 
 		var expr *Expression
+		var task *Task
+
+		// Ищем задачу по ID
 		for _, e := range expressions {
 			for i := range e.Tasks {
-				if e.Tasks[i].ID == res.ID {
+				if e.Tasks[i].NumTask == res.ID {
 					expr = e
+					task = &e.Tasks[i]
 					break
 				}
 			}
+			if task != nil {
+				break
+			}
 		}
 
-		if expr == nil || expr.ProcessingTask == nil || expr.ProcessingTask.ID != res.ID {
+		if task == nil || task.Status != "processing" {
 			http.Error(w, "Task not found or not in processing", http.StatusNotFound)
 			return
 		}
 
 		// Имитация обработки задачи
 		log.Printf("Task %d is being processed...", res.ID)
-		time.Sleep(time.Duration(expr.ProcessingTask.OperationTime) * time.Second)
+		time.Sleep(time.Duration(task.OperationTime) * time.Second)
 
-		// Обновляем результат
-		expr.Result = &res.Result
-		expr.Status = "completed"
-		expr.ProcessingTask = nil // Убираем из выполнения
+		// Обновляем статус задачи
+		task.Status = "completed"
+
+		// Проверяем, все ли задачи выполнены
+		allCompleted := true
+		for _, t := range expr.Tasks {
+			if t.Status != "completed" {
+				allCompleted = false
+				break
+			}
+		}
+		if allCompleted {
+			expr.Status = "completed"
+		}
 
 		// Логируем успешное завершение
 		log.Printf("Task %d completed with result: %f", res.ID, res.Result)
