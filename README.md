@@ -25,52 +25,51 @@
 
 Пример использования:
 
-    1. Запускаем веб сервер калькулятора(API), находясь в главной директории.
+1. Запускаем веб сервер калькулятора(API), находясь в главной директории.
 
-        cd calc_go-main
-        go run calc_go-main\cmd\main.go
+    cd calc_go-main
+    go run calc_go-main\cmd\main.go
 
-    2. Открываете cmd и пишете запрос на curl: 
+2. Открываете cmd и пишете запрос на curl: 
 
-        curl -X POST -H "Content-Type: application/json" -d "{\"expression\": \"5+5\"}" http://127.0.0.1:8080/api/v1/calculate
+    curl -X POST -H "Content-Type: application/json" -d "{\"expression\": \"5+5\"}" http://127.0.0.1:8080/api/v1/calculate
 
-    *Специальная задержка выполнения примера 10 секунд.
+*Специальная задержка выполнения примера 10 секунд.
 
-    Вместо "5+5" подставляете свои примеры.
+Вместо "5+5" подставляете свои примеры.
 
-    3. Дальше создается Task`a, у которой свой уникальный id:
+3. Дальше создается Task`a, у которой свой уникальный id:
 
-        {"id":"f366357a-8955-406b-856c-13b3b3ac820d"}
+    {"id":"f366357a-8955-406b-856c-13b3b3ac820d"}
 
-    4. Затем мы можем обратиться к этой задаче по id:
+4. Затем мы можем обратиться к этой задаче по id:
 
-        curl --location "127.0.0.1:8080/api/v1/expressions/f366357a-8955-406b-856c-13b3b3ac820d"
+    curl --location "127.0.0.1:8080/api/v1/expressions/f366357a-8955-406b-856c-13b3b3ac820d"
 
-    Видим статус, что наш пример выполняется:
+Видим статус, что наш пример выполняется:
 
-        {"expression":{"id":"f366357a-8955-406b-856c-13b3b3ac820d","status":"pending","result":null}} // pending - в ожидании
+    {"expression":{"id":"f366357a-8955-406b-856c-13b3b3ac820d","status":"pending","result":null}} // pending - в ожидании
 
-    Спустя 10 секкунд получаем ответ!
+Спустя 10 секкунд получаем ответ!
 
-        {"expression":{"id":"f366357a-8955-406b-856c-13b3b3ac820d","status":"completed","result":10}}
+    {"expression":{"id":"f366357a-8955-406b-856c-13b3b3ac820d","status":"completed","result":10}}
 
-    5. Также хранятся все примеры, которые мы вводили: 
+5. Также хранятся все примеры, которые мы вводили: 
 
-        curl --location "127.0.0.1:8080/api/v1/expressions"
+    curl --location "127.0.0.1:8080/api/v1/expressions"
 
-        Вывод:
+Вывод:
 
-        {"expressions":[
-            {"id":"f366357a-8955-406b-856c-13b3b3ac820d","status":"completed","result":10},
-            {"id":"84449832-08c2-4832-a4ba-682a3451a430","status":"completed","result":8},
-            {"id":"c7f93cc6-2552-4dc8-ac54-a74384bf6386","status":"completed","result":36}
-        ]}
-    6. Также во время выполнения примера можем отследить его состояние:
+    {"expressions":[
+        {"id":"f366357a-8955-406b-856c-13b3b3ac820d","status":"completed","result":10},
+        {"id":"84449832-08c2-4832-a4ba-682a3451a430","status":"completed","result":8},
+        {"id":"c7f93cc6-2552-4dc8-ac54-a74384bf6386","status":"completed","result":36}
+    ]}
+6. Также во время выполнения примера можем отследить его состояние:
         
-        curl --location "127.0.0.1:8080/api/v1/internal/task"
+    curl --location "127.0.0.1:8080/api/v1/internal/task"
 
-    Вот наш вывод, если есть какие-то задачи, которые выполняются на данный момент времени:
-        {"tasks":
-        [{"task":1,"arg1":"5","arg2":"5","operation":"+","operation_time":10,"status":"processing"},
-        {"task":2,"arg1":"5","arg2":"1","operation":"+","operation_time":10,"status":"processing"}]
-        }
+Вот наш вывод, если есть какие-то задачи, которые выполняются на данный момент времени:
+    {"tasks":
+    [{"task":1,"arg1":"5","arg2":"5","operation":"+","operation_time":10,"status":"processing"},
+    {"task":2,"arg1":"5","arg2":"1","operation":"+","operation_time":10,"status":"processing"}]}
