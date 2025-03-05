@@ -65,7 +65,7 @@
         {"id":"84449832-08c2-4832-a4ba-682a3451a430","status":"completed","result":8},
         {"id":"c7f93cc6-2552-4dc8-ac54-a74384bf6386","status":"completed","result":36}
     ]}
-    
+
 6. Также во время выполнения примера можем отследить его состояние:
         
         curl --location "127.0.0.1:8080/api/v1/internal/task"
@@ -75,3 +75,12 @@
     {"tasks":
     [{"task":1,"arg1":"5","arg2":"5","operation":"+","operation_time":10,"status":"processing"},
     {"task":2,"arg1":"5","arg2":"1","operation":"+","operation_time":10,"status":"processing"}]}
+
+
+Ract приложение.
+
+Запуск:
+
+    cd web/simple-calculator
+    npm start
+*Запуск производиться по адресу: localhost:3000
