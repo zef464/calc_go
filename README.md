@@ -27,12 +27,12 @@
 
 1. Запускаем веб сервер калькулятора(API), находясь в главной директории.
 
-    cd calc_go-main
-    go run calc_go-main\cmd\main.go
+        cd calc_go-main
+        go run calc_go-main\cmd\main.go
 
 2. Открываете cmd и пишете запрос на curl: 
 
-    curl -X POST -H "Content-Type: application/json" -d "{\"expression\": \"5+5\"}" http://127.0.0.1:8080/api/v1/calculate
+        curl -X POST -H "Content-Type: application/json" -d "{\"expression\": \"5+5\"}" http://127.0.0.1:8080/api/v1/calculate
 
 *Специальная задержка выполнения примера 10 секунд.
 
@@ -40,7 +40,7 @@
 
 3. Дальше создается Task`a, у которой свой уникальный id:
 
-    {"id":"f366357a-8955-406b-856c-13b3b3ac820d"}
+        {"id":"f366357a-8955-406b-856c-13b3b3ac820d"}
 
 4. Затем мы можем обратиться к этой задаче по id:
 
@@ -70,6 +70,7 @@
     curl --location "127.0.0.1:8080/api/v1/internal/task"
 
 Вот наш вывод, если есть какие-то задачи, которые выполняются на данный момент времени:
+
     {"tasks":
     [{"task":1,"arg1":"5","arg2":"5","operation":"+","operation_time":10,"status":"processing"},
     {"task":2,"arg1":"5","arg2":"1","operation":"+","operation_time":10,"status":"processing"}]}
